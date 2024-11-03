@@ -773,13 +773,13 @@ int usteer_ubus_trigger_client_scan(struct sta_info *si)
 	return ubus_invoke(ubus_ctx, ln->obj_id, "rrm_beacon_req", b.head, NULL, 0, 100);
 }
 
-void usteer_ubus_kick_client(struct sta_info *si)
+void usteer_ubus_kick_client(struct sta_info *si, uint32_t kick_reason_code)
 {
 	struct usteer_local_node *ln = container_of(si->node, struct usteer_local_node, node);
 
 	blob_buf_init(&b, 0);
 	blobmsg_printf(&b, "addr", MAC_ADDR_FMT, MAC_ADDR_DATA(si->sta->addr));
-	blobmsg_add_u32(&b, "reason", config.load_kick_reason_code);
+	blobmsg_add_u32(&b, "reason", kick_reason_code);
 	blobmsg_add_u8(&b, "deauth", 1);
 	ubus_invoke(ubus_ctx, ln->obj_id, "del_client", b.head, NULL, 0, 100);
 	usteer_sta_disconnected(si);

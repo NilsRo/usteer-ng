@@ -524,7 +524,7 @@ usteer_local_node_snr_kick(struct usteer_local_node *ln)
 		ev.count = si->kick_count;
 		usteer_event(&ev);
 
-		usteer_ubus_kick_client(si);
+		usteer_ubus_kick_client(si, KICK_REASON_UNSPECIFIED);
 		return;
 	}
 }
@@ -608,7 +608,7 @@ usteer_local_node_load_kick(struct usteer_local_node *ln)
 	ev.si_other = candidate;
 	ev.count = kick1->kick_count;
 
-	usteer_ubus_kick_client(kick1);
+	usteer_ubus_kick_client(kick1, config.load_kick_reason_code);
 
 out:
 	usteer_event(&ev);
@@ -623,7 +623,7 @@ usteer_local_node_perform_kick(struct usteer_local_node *ln)
 		if (!si->kick_time || si->kick_time > current_time)
 			continue;
 
-		usteer_ubus_kick_client(si);
+		usteer_ubus_kick_client(si, KICK_REASON_BSS_TRANSITION);
 	}
 }
 
