@@ -97,6 +97,7 @@ void usteer_init_defaults(void)
 	config.initial_connect_delay = 0;
 	config.remote_node_timeout = 10;
 	config.aggressiveness = 3;
+	config.reassociation_delay = 30;
 
 	config.steer_reject_timeout = 60000;
 

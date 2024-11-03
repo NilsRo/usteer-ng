@@ -180,6 +180,7 @@ struct usteer_config {
 	uint32_t aggressiveness;
 	struct blob_attr *aggressiveness_mac_list;
 	uint32_t aggressive_disassoc_timer;
+	uint32_t reassociation_delay;
 
 	int32_t min_snr;
 	uint32_t min_snr_kick_delay;

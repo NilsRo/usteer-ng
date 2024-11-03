@@ -80,6 +80,9 @@ config usteer
 	# 4 = BSS-transition-request with disassociation imminent, timer and forced disassociation
 	#option aggressiveness 3
 
+	# Timeout (s in "1024ms") a station is requested to avoid reassociation after bss transition
+	#option reassociation_delay 30
+
 	# List of MACs (lower case) to set aggressiveness per station (ff:ff:ff:ff:ff,2)
 	#list aggressiveness_mac_list ''
 
