@@ -66,6 +66,13 @@ enum usteer_beacon_measurement_mode {
 	BEACON_MEASUREMENT_TABLE = 2,
 };
 
+enum usteer_kick_reason_code
+{
+	KICK_REASON_UNSPECIFIED = 1,
+	KICK_REASON_LOAD = 5,
+	KICK_REASON_BSS_TRANSITION = 12,
+};
+
 struct sta_info;
 struct usteer_local_node;
 struct usteer_remote_host;
@@ -342,7 +349,7 @@ void usteer_band_steering_sta_update(struct sta_info *si);
 bool usteer_band_steering_is_target(struct usteer_local_node *ln, struct usteer_node *node);
 
 void usteer_ubus_init(struct ubus_context *ctx);
-void usteer_ubus_kick_client(struct sta_info *si);
+void usteer_ubus_kick_client(struct sta_info *si, uint32_t kick_reason_code);
 int usteer_ubus_trigger_client_scan(struct sta_info *si);
 int usteer_ubus_band_steering_request(struct sta_info *si,
                                       uint8_t dialog_token,
