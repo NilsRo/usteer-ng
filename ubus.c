@@ -686,9 +686,11 @@ int usteer_ubus_bss_transition_request(struct sta_info *si,
 	blobmsg_add_u8(&b, "disassociation_imminent", disassoc_imminent);
 	if (disassoc_imminent) {
 		blobmsg_add_u32(&b, "disassociation_timer", disassoc_timer);
+		blobmsg_add_u32(&b, "reassoc_delay", config.reassociation_delay);
 	}
 	blobmsg_add_u8(&b, "abridged", abridged);
 	blobmsg_add_u32(&b, "validity_period", validity_period);
+	blobmsg_add_u32(&b, "mbo_reason", 5);
 
 	if (!target_node) {
 		/* Add all known neighbors if no specific target set */
@@ -718,9 +720,11 @@ int usteer_ubus_band_steering_request(struct sta_info *si,
 	blobmsg_add_u8(&b, "disassociation_imminent", disassoc_imminent);
 	if (disassoc_imminent) {
 		blobmsg_add_u32(&b, "disassociation_timer", disassoc_timer);
+		blobmsg_add_u32(&b, "reassoc_delay", config.reassociation_delay);
 	}
 	blobmsg_add_u8(&b, "abridged", abridged);
 	blobmsg_add_u32(&b, "validity_period", validity_period);
+	blobmsg_add_u32(&b, "mbo_reason", 5);
 
 	c = blobmsg_open_array(&b, "neighbors");
 	for_each_local_node(node) {
