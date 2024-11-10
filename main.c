@@ -100,8 +100,9 @@ void usteer_init_defaults(void)
 
 	config.steer_reject_timeout = 60000;
 
-	config.band_steering_interval = 120000;
+	config.band_steering_interval = 30000;
 	config.band_steering_min_snr = -60;
+	config.band_steering_signal_threshold = 5;
 
 	config.link_measurement_interval = 30000;
 

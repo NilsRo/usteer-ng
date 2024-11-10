@@ -202,6 +202,7 @@ struct usteer_config {
 
 	uint32_t band_steering_interval;
 	int32_t band_steering_min_snr;
+	uint32_t band_steering_signal_threshold;
 
 	uint32_t link_measurement_interval;
 
@@ -278,6 +279,7 @@ struct sta_info {
 
 	struct {
 		bool below_snr;
+		int signal_threshold;
 	} band_steering;
 
 	uint64_t kick_time;
