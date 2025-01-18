@@ -380,7 +380,7 @@ usteer_roam_trigger_sm(struct usteer_local_node *ln, struct sta_info *si)
 		}
 
 		if (!candidate->node->rrm_nr)
-			MSG(FATAL, "Candiates node rrm nr not returned from hostapd. Neighbor list empty!");
+			MSG(INFO, "Candidates node rrm nr not returned from hostapd. Neighbor list empty!");
 
 		if (!si->roam_transition_start)
 			si->roam_transition_start = current_time;
