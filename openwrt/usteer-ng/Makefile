@@ -4,7 +4,7 @@ PKG_NAME:=usteer-ng
 PKG_VERSION:=1.0.0
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/NilsRo/usteer-ng/tar.gz/$(PKG_NAME)-$(PKG_VERSION)?
-PKG_HASH:=105611ae3b6d8fc5656f710af7919e34c65bc915bec37b268eb0a8c3989f294d
+PKG_HASH:=3d87ce13ba55de92dfbd51867021f5b690ddf1a6be9eff5b303286529d8be57c
 
 PKG_RELEASE:=1
 PKG_MAINTAINER:=Nils Hendrik Rottgardt <n.rottgardt@gmail.com>
