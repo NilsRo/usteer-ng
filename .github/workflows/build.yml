@@ -1,0 +1,134 @@
+name: Publish
+
+on:
+  workflow_dispatch:
+    inputs:
+      openwrt_version:
+       description: 'OpenWrt version'
+       # Use 25.12-SNAPSHOT for APK and 24.10-SNAPSHOT for IPK
+       default: '25.12-SNAPSHOT'
+       required: true
+       type: string
+  
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: ${{ matrix.arch }} build
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    strategy:
+      matrix:
+        arch:
+          ## aarch64-unknown-linux-musl #####
+          - aarch64_cortex-a53           # OK
+          - aarch64_cortex-a72           # OK
+          - aarch64_cortex-a76           # OK
+          - aarch64_generic              # OK
+          ## arm-unknown-linux-musleabi* ####
+          - arm_arm1176jzf-s_vfp         # OK
+          - arm_arm926ej-s               # OK
+          - arm_cortex-a15_neon-vfpv4    # OK
+          - arm_cortex-a5_vfpv4          # OK
+          - arm_cortex-a7                # OK
+          - arm_cortex-a7_neon-vfpv4     # OK
+          - arm_cortex-a7_vfpv4          # OK
+          - arm_cortex-a8_vfpv3          # OK
+          - arm_cortex-a9                # OK
+          - arm_cortex-a9_neon           # OK
+          - arm_cortex-a9_vfpv3-d16      # OK
+          - arm_fa526                    # OK
+          - arm_xscale                   # OK
+          - armeb_xscale                 # OK
+          ## loongarch64-unknown-linux-musl #
+          - loongarch64_generic          # OK
+          ## riscv64gc-unknown-linux-musl ###
+          - riscv64_generic              # OK
+          - riscv64_riscv64              # OK
+          ## x86_64-unknown-linux-musl ######
+          - x86_64                       # OK
+          ## i*86-unknown-linux-musl ########
+          - i386_pentium-mmx             # OK
+          - i386_pentium4                # OK
+          ## mips*-unknown-linux-musl #######
+          - mips64_mips64r2              # OK 
+          - mips64_octeonplus            # OK
+          - mips64el_mips64r2            # OK
+          - mips_24kc                    # OK
+          - mips_4kec                    # OK
+          - mips_mips32                  # OK
+          - mipsel_24kc                  # OK
+          - mipsel_24kc_24kf             # OK
+          - mipsel_74kc                  # OK
+          - mipsel_mips32                # OK
+          ## powerpc*-unknown-linux-musl ####
+          - powerpc64_e5500              # OK
+          - powerpc_464fp                # OK
+          - powerpc_8548                 # OK
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Build
+        uses: openwrt/gh-action-sdk@main
+        env:
+          ARCH: ${{ matrix.arch }}-${{ github.event.inputs.openwrt_version }}
+          V: sc
+          PACKAGES: usteer-ng
+
+      - name: List outputs
+        run: |
+          find bin/packages
+          
+          # Renaming APK files to include architecture suffix
+          # e.g., librespot_0.8.0-r1.apk -> librespot_0.8.0-r1_aarch64_cortex-a53.apk
+          if ls bin/packages/${{ matrix.arch }}/action/*.apk 1> /dev/null 2>&1; then
+            echo "Processing APK files..."
+            for apk_file in bin/packages/${{ matrix.arch }}/action/*.apk; do
+              filename=$(basename "$apk_file")
+              new_filename="${filename%.apk}_${{ matrix.arch }}.apk"
+              mv bin/packages/${{ matrix.arch }}/action/"$filename" bin/packages/${{ matrix.arch }}/action/"$new_filename"
+            done
+          else
+            echo "No APK files found"
+          fi
+
+      - uses: actions/upload-artifact@v6
+        with:
+          name: ls-${{ matrix.arch }}
+          path: |
+            bin/packages/${{ matrix.arch }}/action/*.ipk
+            bin/packages/${{ matrix.arch }}/action/*.apk
+
+  release:
+
+    name: Release all packages
+    runs-on: ubuntu-latest
+    needs: build
+    
+    steps:
+    
+      - uses: actions/download-artifact@v6
+        with:
+          path: artifacts
+          pattern: ls-*
+          merge-multiple: true
+          
+      - name: List outputs
+        id: list
+        run: |
+          find artifacts
+          ls artifacts | head -n 1 | awk -F"_" '{ print "usteer-ng_version="$2 }' >> "$GITHUB_OUTPUT"
+    
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          prerelease: true
+          tag_name: v${{ steps.list.outputs.usteer-ng_version }}_${{ github.event.inputs.openwrt_version }}_${{ github.run_number }}
+          body: |
+            usteer-ng v${{ steps.list.outputs.usteer-ng_version }} OpenWrt ${{ github.event.inputs.openwrt_version }} build
+          files: |
+            artifacts/*
