@@ -136,7 +136,7 @@ config usteer
 
 	# Attempting to steer clients to a higher frequency-band every n ms.
 	# A value of 0 disabled band-steering.
-	#option band_steering_interval 120000
+	#option band_steering_interval 30000
 
 	# Minimal SNR or absolute signal a device has to maintain over band_steering_interval to be
 	# steered to a higher frequency band
@@ -144,7 +144,10 @@ config usteer
 
 	# Difference that the signal must be better compared to signal was on connection to node.
 	# Avoids conflicts between roaming and band-steering policies.
-	# option band_steering_signal_threshold 5
+	#option band_steering_signal_threshold 5
+
+	# Enable dynamic threshold reduction (0/1)
+	#option band_steering_threshold_enabled 1
 
 	# Interval (ms) the device is sent a link-measurement request to help assess
 	# the bi-directional link quality. Setting the interval to 0 disables link-measurements.

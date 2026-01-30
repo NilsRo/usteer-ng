@@ -33,12 +33,14 @@ void usteer_band_steering_sta_update(struct sta_info *si)
 	}
 
 	/* Adapt signal threshold to actual signal quality */
-	if (si->signal < si->band_steering.signal_threshold) {
-		si->band_steering.signal_threshold--;
-		MSG(DEBUG, "band steering station " MAC_ADDR_FMT " (%s) reduce threshold %d, signal: %d\n", MAC_ADDR_DATA(si->sta->addr), usteer_node_name(si->node), si->band_steering.signal_threshold, si->signal);
+	if (config.band_steering_threshold_enabled) {
+		if (si->signal < si->band_steering.signal_threshold) {
+			si->band_steering.signal_threshold--;
+			MSG(DEBUG, "band steering station " MAC_ADDR_FMT " (%s) reduce threshold %d, signal: %d\n", MAC_ADDR_DATA(si->sta->addr), usteer_node_name(si->node), si->band_steering.signal_threshold, si->signal);
+		}
+		if (si->signal < usteer_snr_to_signal(si->node, config.band_steering_min_snr) || si->signal < si->band_steering.signal_threshold + config.band_steering_signal_threshold)
+			si->band_steering.below_snr = true;
 	}
-	if (si->signal < usteer_snr_to_signal(si->node, config.band_steering_min_snr) || si->signal < si->band_steering.signal_threshold + config.band_steering_signal_threshold)
-		si->band_steering.below_snr = true;
 }
 
 bool usteer_band_steering_is_target(struct usteer_local_node *ln, struct usteer_node *node)
