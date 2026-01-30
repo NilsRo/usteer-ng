@@ -69,7 +69,6 @@ uci_usteer() {
 	uci_option_to_json_bool "$cfg" local_mode
 	uci_option_to_json_bool "$cfg" load_kick_enabled
 	uci_option_to_json_bool "$cfg" assoc_steering
-	uci_option_to_json_bool "$cfg" aggressiveness
 	uci_option_to_json_string "$cfg" node_up_script
 	uci_option_to_json_string_array "$cfg" ssid_list
 	uci_option_to_json_string_array "$cfg" aggressiveness_mac_list
@@ -79,7 +78,7 @@ uci_usteer() {
 		debug_level \
 		sta_block_timeout local_sta_timeout local_sta_update \
 		max_neighbor_reports max_retry_band seen_policy_timeout \
-		measurement_report_timeout \
+		aggressiveness measurement_report_timeout \
 		load_balancing_threshold band_steering_threshold \
 		remote_update_interval remote_node_timeout\
 		min_connect_snr min_snr min_snr_kick_delay signal_diff_threshold \
