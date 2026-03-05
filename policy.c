@@ -55,7 +55,7 @@ better_signal_strength(int signal_cur, int signal_new)
 }
 
 static bool
-below_load_threshold(struct usteer_node *node)
+above_load_threshold(struct usteer_node *node)
 {
 	return node->n_assoc >= config.load_kick_min_clients &&
 	       node->load > config.load_kick_threshold;
@@ -64,7 +64,7 @@ below_load_threshold(struct usteer_node *node)
 static bool
 has_better_load(struct usteer_node *node_cur, struct usteer_node *node_new)
 {
-	return !below_load_threshold(node_cur) && below_load_threshold(node_new);
+	return above_load_threshold(node_cur) && !above_load_threshold(node_new);
 }
 
 bool
@@ -107,8 +107,7 @@ is_better_candidate(struct sta_info *si_cur, struct sta_info *si_new)
 	if (better_signal_strength(current_signal, new_signal))
 		reasons |= (1 << UEV_SELECT_REASON_SIGNAL);
 
-	if (has_better_load(current_node, new_node) &&
-		!has_better_load(current_node, new_node))
+	if (has_better_load(current_node, new_node))
 		reasons |= (1 << UEV_SELECT_REASON_LOAD);
 
 	return reasons;
