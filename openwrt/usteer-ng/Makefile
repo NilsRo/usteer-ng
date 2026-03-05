@@ -6,7 +6,7 @@ PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/NilsRo/usteer-ng/tar.gz/$(PKG_NAME)-$(PKG_VERSION)?
 PKG_HASH:=3d87ce13ba55de92dfbd51867021f5b690ddf1a6be9eff5b303286529d8be57c
 
-PKG_RELEASE:=1
+PKG_RELEASE:=2
 PKG_MAINTAINER:=Nils Hendrik Rottgardt <n.rottgardt@gmail.com>
 PKG_LICENSE:=GPL-2.0-only
 
@@ -30,6 +30,8 @@ define Package/usteer-ng
   SUBMENU:=Wireless
   DEPENDS:=+libubox +libubus +libblobmsg-json +libnl-tiny
   TITLE:=Usteer - Next Generation OpenWrt AP roaming assist daemon
+  PROVIDES:=usteer $(PKG_NAME)
+  REPLACES:=usteer
   URL:=https://github.com/NilsRo/usteer-ng/
 endef
 
