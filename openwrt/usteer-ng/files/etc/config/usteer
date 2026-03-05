@@ -5,13 +5,13 @@ config usteer
 	option 'network' 'lan'
 
 	# Log messages to syslog (0/1)
-	option 'syslog' '1'
+	#option 'syslog' '1'
 
 	# Disable network communication (0/1)
-	option local_mode '0'
+	#option local_mode '0'
 
 	# Use IPv6 for remote exchange
-	option 'ipv6' '0'
+	#option 'ipv6' '0'
 
 	# Minimum level of logged messages
 	# 0 = fatal
@@ -20,7 +20,7 @@ config usteer
 	# 3 = some debug messages
 	# 4 = network packet information
 	# 5 = all debug messages
-	option 'debug_level' '2'
+	#option 'debug_level' '2'
 
 	# Maximum number of neighbor reports set for a node
 	#option max_neighbor_reports 8
@@ -96,7 +96,7 @@ config usteer
 	# Maximum signal-to-noise ratio or signal level (dBm) before attempting to trigger
 	# client scans for roaming
 	# Related: should be higher than `roam_trigger_snr`
-	#option roam_scan_snr 0
+	#option roam_scan_snr -65
 
 	# Maximum number of client roaming scan trigger attempts
 	#option roam_scan_tries 3
@@ -114,13 +114,13 @@ config usteer
 	#option roam_trigger_snr 0
 
 	# Minimum time (ms) between client roaming trigger attempts
-	#option roam_trigger_interval 60000
+	#option roam_trigger_interval 30000
 
 	# Timeout (ms) for client roam requests. usteer will kick the client after this times out.
 	#option roam_kick_delay 10000
 
 	# Minimum signal strength difference until AP steering policy is active
-	#option signal_diff_threshold 0
+	#option signal_diff_threshold 8
 
 	# Initial delay (ms) before responding to probe requests (to allow other APs to see packets as well)
 	#option initial_connect_delay 0

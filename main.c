@@ -84,6 +84,12 @@ void usteer_init_defaults(void)
 {
 	memset(&config, 0, sizeof(config));
 
+	config.syslog = true;
+	config.debug_level = MSG_FATAL;
+	
+	config.ipv6 = false;
+	config.local_mode = 0;
+
 	config.sta_block_timeout = 30 * 1000;
 	config.local_sta_timeout = 120 * 1000;
 	config.measurement_report_timeout = 120 * 1000;
@@ -91,6 +97,7 @@ void usteer_init_defaults(void)
 	config.max_retry_band = 5;
 	config.max_neighbor_reports = 8;
 	config.seen_policy_timeout = 30 * 1000;
+	config.signal_diff_threshold = 8;
 	config.band_steering_threshold = 5;
 	config.load_balancing_threshold = 0;
 	config.remote_update_interval = 1000;
@@ -99,22 +106,24 @@ void usteer_init_defaults(void)
 	config.aggressiveness = 3;
 	config.reassociation_delay = 30;
 
-	config.steer_reject_timeout = 60000;
+	config.steer_reject_timeout = 60 * 1000;
 
-	config.band_steering_interval = 30000;
+	config.band_steering_interval = 30 * 1000;
 	config.band_steering_min_snr = -60;
 	config.band_steering_signal_threshold = 5;
 
-	config.link_measurement_interval = 30000;
+	config.link_measurement_interval = 30 * 1000;
 
 	config.probe_steering = 0;
 
-	config.roam_kick_delay = 10000;
+	config.roam_kick_delay = 10 * 1000;
 	config.roam_process_timeout = 5 * 1000;
 	config.roam_scan_tries = 3;
 	config.roam_scan_timeout = 0;
 	config.roam_scan_interval = 10 * 1000;
-	config.roam_trigger_interval = 60 * 1000;
+	config.roam_scan_snr = -65;
+	config.roam_trigger_interval = 30 * 1000;
+	config.roam_trigger_snr = 0;
 
 	config.min_snr_kick_delay = 5 * 1000;
 
@@ -123,8 +132,6 @@ void usteer_init_defaults(void)
 	config.load_kick_delay = 10 * 1000;
 	config.load_kick_min_clients = 10;
 	config.load_kick_reason_code = 5; /* WLAN_REASON_DISASSOC_AP_BUSY */
-
-	config.debug_level = MSG_FATAL;
 }
 
 void usteer_update_time(void)
