@@ -24,6 +24,10 @@ opkg update;opkg remove --force-depends usteer;opkg install /root/usteer/*.ipk l
 
 You can find the complete documentation for setting everything up and getting it running here:[OpenWRT documentation](https://openwrt.org/docs/guide-user/network/wifi/usteer).
 
+### Config recommendation
+The default settings are the best in most environments (many users overdo optimizations to it) to support roaming and band steering. At best nothing has to be configured but take care that usteer-ng communication is not done on a public network.
+
+
 ## Submitting patches
 
 usteer-ng is fully managed in Github. Please contribute via Pull-Requests to the "development" branch.

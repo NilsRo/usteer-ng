@@ -111,16 +111,16 @@ config usteer
 	# Maximum signal-to-noise ratio or signal level (dBm) before attempting to trigger
 	# forced client roaming
 	# Related: should be lower than `roam_scan_snr`
-	#option roam_trigger_snr 0
+	#option roam_trigger_snr -65
 
 	# Minimum time (ms) between client roaming trigger attempts
-	#option roam_trigger_interval 60000
+	#option roam_trigger_interval 30000
 
 	# Timeout (ms) for client roam requests. usteer will kick the client after this times out.
 	#option roam_kick_delay 10000
 
 	# Minimum signal strength difference until AP steering policy is active
-	#option signal_diff_threshold 0
+	#option signal_diff_threshold 5
 
 	# Initial delay (ms) before responding to probe requests (to allow other APs to see packets as well)
 	#option initial_connect_delay 0
