@@ -14,8 +14,8 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
-    name: ${{ matrix.arch }} build
+  build-usteer:
+    name: usteer ${{ matrix.arch }} build
     runs-on: ubuntu-latest
     continue-on-error: true
     strategy:
@@ -98,16 +98,58 @@ jobs:
 
       - uses: actions/upload-artifact@v6
         with:
-          name: ls-${{ matrix.arch }}
+          name: ls-usteer-${{ matrix.arch }}
           path: |
             bin/packages/${{ matrix.arch }}/action/*.ipk
             bin/packages/${{ matrix.arch }}/action/*.apk
+
+  build-luci-app:
+    name: luci-app build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Build
+        uses: openwrt/gh-action-sdk@main
+        env:
+          ARCH: x86_64-${{ github.event.inputs.openwrt_version }}
+          V: sc
+          PACKAGES: luci-app-usteer
+
+      - name: List outputs
+        run: |
+          find bin/packages
+          
+          # Renaming APK files to include architecture suffix
+          # e.g., librespot_0.8.0-r1.apk -> librespot_0.8.0-r1_aarch64_cortex-a53.apk
+          if ls bin/packages/x86_64/action/*.apk 1> /dev/null 2>&1; then
+            echo "Processing APK files..."
+            for apk_file in bin/packages/x86_64/action/*.apk; do
+              filename=$(basename "$apk_file")
+              new_filename="${filename%.apk}_all.apk"
+              mv bin/packages/x86_64/action/"$filename" bin/packages/x86_64/action/"$new_filename"
+            done
+          else
+            echo "No APK files found"
+          fi
+
+      - uses: actions/upload-artifact@v6
+        with:
+          name: ls-luci-app
+          path: |
+            bin/packages/x86_64/action/*.ipk
+            bin/packages/x86_64/action/*.apk
 
   release:
 
     name: Release all packages
     runs-on: ubuntu-latest
-    needs: build
+    needs:
+      - build-usteer
+      - build-luci-app
     
     steps:
     
@@ -121,7 +163,7 @@ jobs:
         id: list
         run: |
           find artifacts
-          ls artifacts | head -n 1 | awk -F"_" '{ print "usteer-ng_version="$2 }' >> "$GITHUB_OUTPUT"
+          ls artifacts/usteer-ng* | head -n 1 | awk -F"_" '{ print "usteer-ng_version="$2 }' >> "$GITHUB_OUTPUT"
     
       - name: Release
         uses: softprops/action-gh-release@v1
