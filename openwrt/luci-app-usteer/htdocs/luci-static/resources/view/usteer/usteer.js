@@ -491,6 +491,7 @@ return view.extend({
 		o.readonly = true;
 
 		o = s.taboption('settings', widgets.NetworkSelect, 'network', _('Network'), _('The network interface for inter-AP communication'));
+		o.rmempty = false;
 
 		o = s.taboption('settings', form.Flag, 'syslog', _('Log messages to syslog'),_('default true'));
 		o.default = '1';
@@ -511,7 +512,6 @@ return view.extend({
 		o.value('4', _('Network packet info'));
 		o.value('5', _('All debug messages'));
 		o.rmempty = false;
-		o.editable = true;
 
 		o = s.taboption('settings', form.Value, 'max_neighbor_reports', _('Max neighbor reports'), _('Maximum number of neighbor reports set for a node'));
 		o.optional = true;
@@ -553,7 +553,7 @@ return view.extend({
 		o.placeholder = 0;
 		o.datatype = 'uinteger';
 
-		o = s.taboption('settings', form.Value, 'band_steering_threshold', _('Band steering threshold'), _('Minimum number of stations delta between bands before band steering policy is active'));
+		o = s.taboption('settings', form.Value, 'band_steering_threshold', _('Band steering threshold'), _('Minimum number of stations delta between bands before band steering policy is active (no effect unless load balancing threshold is above 0).'));
 		o.optional = true;
 		o.placeholder = 5;
 		o.datatype = 'uinteger';
@@ -574,17 +574,17 @@ return view.extend({
 		o = s.taboption('settings', form.Flag, 'probe_steering', _('Probe steering'), _('Allow ignoring probe requests for steering purposes')+' ('+_('default false')+')');
 		o.optional = true;
 
-		o = s.taboption('settings', form.Value, 'min_connect_snr', _('Min connect SNR'), _('Minimum signal-to-noise ratio or signal level (dBm) to allow connections'));
+		o = s.taboption('settings', form.Value, 'min_connect_snr', _('Min connect SNR'), _('Minimum signal-to-noise ratio or signal level (dBm) to allow connections (should be equal to or higher than min SNR and band steering min SNR).'));
 		o.optional = true;
 		o.placeholder = 0;
 		o.datatype = 'integer';
 
-		o = s.taboption('settings', form.Value, 'min_snr', _('Min SNR'), _('Minimum signal-to-noise ratio or signal level (dBm) to remain connected'));
+		o = s.taboption('settings', form.Value, 'min_snr', _('Min SNR'), _('Minimum signal-to-noise ratio or signal level (dBm) to remain connected (should be equal to or lower than min connect SNR and lower than band steering min SNR).'));
 		o.optional = true;
 		o.placeholder = 0;
 		o.datatype = 'integer';
 
-		o = s.taboption('settings', form.Value, 'min_snr_kick_delay', _('Min SNR kick delay'), _('Timeout after which a station with SNR < min_SNR will be kicked'));
+		o = s.taboption('settings', form.Value, 'min_snr_kick_delay', _('Min SNR kick delay'), _('Timeout after which a station with SNR < min SNR will be kicked.'));
 		o.optional = true;
 		o.placeholder = 5000;
 		o.datatype = 'uinteger';
@@ -594,14 +594,32 @@ return view.extend({
 		o.placeholder = 60000;
 		o.datatype = 'uinteger';
 
+		o = s.taboption('settings', form.ListValue, 'aggressiveness', _('Aggressiveness'), _('Aggressiveness of BSS-transition-request to push a station to another node (AP or band).'));
+		o.value('0', _('No active transition'));
+		o.value('1', _('Passive BSS-transition-request'));
+		o.value('2', _('BSS-transition-request with disassociation imminent'));
+		o.value('3', _('BSS-transition-request with disassociation imminent and timer'));
+		o.value('4', _('BSS-transition-request with disassociation imminent, timer and forced disassociation'));
+		o.default = '3';
+		o.rmempty = false;
+
+		o = s.taboption('settings', form.Value, 'reassociation_delay', _('Reassociation delay'), _('Timeout (s in "1024ms") a station is requested to avoid reassociation after bss transition.'));
+		o.optional = true;
+		o.placeholder = 30;
+		o.datatype = 'uinteger';
+
+		o = s.taboption('settings', form.DynamicList, 'aggressiveness_mac_list', _('Aggressiveness MAC list'), _('List of MACs (lower case) to set aggressiveness per station (ff:ff:ff:ff:ff,2).'));
+		o.optional = true;
+		o.datatype = 'list(string)';
+
 		o = s.taboption('settings', form.Value, 'roam_process_timeout', _('Roam process timeout'), _('Timeout (in ms) after which a association following a disassociation is not seen as a roam'));
 		o.optional = true;
 		o.placeholder = 5000;
 		o.datatype = 'uinteger';
 
-		o = s.taboption('settings', form.Value, 'roam_scan_snr', _('Roam scan SNR'), _('Minimum signal-to-noise ratio or signal level (dBm) before attempting to trigger client scans for roam'));
+		o = s.taboption('settings', form.Value, 'roam_scan_snr', _('Roam scan SNR'), _('Maximum signal-to-noise ratio or signal level (dBm) before attempting to trigger client scans for roaming (should be higher than roam trigger SNR).'));
 		o.optional = true;
-		o.placeholder = 0;
+		o.placeholder = -65;
 		o.datatype = 'integer';
 
 		o = s.taboption('settings', form.Value, 'roam_scan_tries', _('Roam scan tries'), _('Maximum number of client roaming scan trigger attempts'));
@@ -622,14 +640,14 @@ return view.extend({
 		o.placeholder = 10000;
 		o.datatype = 'uinteger';
 
-		o = s.taboption('settings', form.Value, 'roam_trigger_snr', _('Roam trigger SNR'), _('Minimum signal-to-noise ratio or signal level (dBm) before attempting to trigger forced client roaming'));
+		o = s.taboption('settings', form.Value, 'roam_trigger_snr', _('Roam trigger SNR'), _('Maximum signal-to-noise ratio or signal level (dBm) before attempting to trigger forced client roaming (should be lower than roam scan SNR).'));
 		o.optional = true;
 		o.placeholder = 0;
 		o.datatype = 'integer';
 
 		o = s.taboption('settings', form.Value, 'roam_trigger_interval', _('Roam trigger interval'), _('Minimum time (ms) between client roaming trigger attempts'));
 		o.optional = true;
-		o.placeholder = 60000;
+		o.placeholder = 30000;
 		o.datatype = 'uinteger';
 
 		o = s.taboption('settings', form.Value, 'roam_kick_delay', _('Roam kick delay'), _('Timeout (ms) for client roam requests. usteer will kick the client after this times out.'));
@@ -639,7 +657,7 @@ return view.extend({
 
 		o = s.taboption('settings', form.Value, 'signal_diff_threshold', _('Signal diff threshold'), _('Minimum signal strength difference until AP steering policy is active'));
 		o.optional = true;
-		o.placeholder = 0;
+		o.placeholder = 8;
 		o.datatype = 'uinteger';
 
 		o = s.taboption('settings', form.Value, 'initial_connect_delay', _('Initial connect delay'), _('Initial delay (ms) before responding to probe requests (to allow other APs to see packets as well)'));
@@ -674,12 +692,17 @@ return view.extend({
 
 		o = s.taboption('settings', form.Value, 'band_steering_interval', _('Band steering interval'), _('Attempting to steer clients to a higher frequency-band every n ms. A value of 0 disables band-steering.'));
 		o.optional = true;
-		o.placeholder = 120000;
+		o.placeholder = 30000;
 		o.datatype = 'uinteger';
 
-		o = s.taboption('settings', form.Value, 'band_steering_min_snr', _('Band steering min SNR'), _('Minimal SNR or absolute signal a device has to maintain over band_steering_interval to be steered to a higher frequency band.'));
+		o = s.taboption('settings', form.Value, 'band_steering_min_snr', _('Band steering min SNR'), _('Minimal SNR or absolute signal a device has to maintain over band_steering_interval to be steered to a higher frequency band (should be above min connect SNR and min SNR).'));
 		o.optional = true;
 		o.placeholder = -60;
+		o.datatype = 'integer';
+
+		o = s.taboption('settings', form.Value, 'band_steering_signal_threshold', _('Band steering signal threshold'), _('Difference that the signal must be better compared to signal was on connection to node. Avoids conflicts between roaming and band-steering policies. A value of 0 disables threshold.'));
+		o.optional = true;
+		o.placeholder = 5;
 		o.datatype = 'integer';
 
 		o = s.taboption('settings', form.Value, 'link_measurement_interval', _('Link measurement interval'),
