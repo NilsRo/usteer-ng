@@ -749,6 +749,9 @@ static void usteer_reload_timer(struct uloop_timeout *t) {
 		close(remote_fd.fd);
 	}
 
+	if (config.local_mode)
+		return;
+
 	if (config.ipv6) {
 		remote_fd.fd = usteer_create_v6_socket();
 		remote_fd.cb = interface_recv_v6;
@@ -765,6 +768,8 @@ static void usteer_reload_timer(struct uloop_timeout *t) {
 
 int usteer_interface_init(void)
 {
+	if (config.local_mode)
+		return -1;
 	if (usteer_init_local_id())
 		return -1;
 

@@ -94,6 +94,7 @@ void usteer_init_defaults(void)
 	config.signal_diff_threshold = 8;
 	config.band_steering_threshold = 5;
 	config.load_balancing_threshold = 0;
+	config.local_mode = 0;
 	config.remote_update_interval = 1000;
 	config.initial_connect_delay = 0;
 	config.remote_node_timeout = 10;
