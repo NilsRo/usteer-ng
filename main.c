@@ -128,6 +128,7 @@ void usteer_init_defaults(void)
 	config.load_kick_min_clients = 10;
 	config.load_kick_reason_code = 5; /* WLAN_REASON_DISASSOC_AP_BUSY */
 
+	config.syslog = true;
 	config.debug_level = MSG_FATAL;
 }
 
