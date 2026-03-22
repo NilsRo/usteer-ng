@@ -17,6 +17,8 @@
  *   Copyright (C) 2020 John Crispin <john@phrozen.org> 
  */
 
+#include <ctype.h>
+#include <netinet/ether.h>
 #include "usteer.h"
 
 static int
@@ -81,11 +83,10 @@ usteer_sta_update_aggressiveness(struct sta *sta)
 {
 	struct blob_attr *cur;
 	int rem;
-	char sta_mac[18];
+	uint8_t *config_addr;
 	char config_entry[20];
 	char config_mac[18];
-	
-	sprintf(sta_mac, MAC_ADDR_FMT, MAC_ADDR_DATA(sta->addr));
+
 	sta->aggressiveness = config.aggressiveness;
 	blobmsg_for_each_attr(cur, config.aggressiveness_mac_list, rem) {
 		strcpy(config_entry, blobmsg_get_string(cur));
@@ -93,10 +94,22 @@ usteer_sta_update_aggressiveness(struct sta *sta)
 			continue;
 		strncpy(config_mac, config_entry, 18);
 		config_mac[17] = '\0';
-		if (strcmp(config_mac, sta_mac) != 0)
+		config_addr = (uint8_t *) ether_aton(config_mac);
+		if (memcmp(config_addr, sta->addr, 6) != 0)
 			continue;
 		sta->aggressiveness = config_entry[18] - '0';
+		MSG(DEBUG, "Set aggressiveness for station " MAC_ADDR_FMT " from config to %d\n",
+			MAC_ADDR_DATA(sta->addr), sta->aggressiveness);
 		break;
+	}
+}
+
+void
+usteer_sta_load_each_aggressiveness()
+{
+	struct sta *sta;
+	avl_for_each_element(&stations, sta, avl) {
+		usteer_sta_update_aggressiveness(sta);
 	}
 }
 
@@ -128,8 +141,6 @@ usteer_sta_info_get(struct sta *sta, struct usteer_node *node, bool *create)
 	list_add(&si->node_list, &node->sta_info);
 	si->created = current_time;
 	*create = true;
-
-	usteer_sta_update_aggressiveness(sta);
 
 	/* Node is by default not connected. */
 	usteer_sta_disconnected(si);
@@ -168,7 +179,7 @@ usteer_sta_get(const uint8_t *addr, bool create)
 	avl_insert(&stations, &sta->avl);
 	INIT_LIST_HEAD(&sta->nodes);
 	INIT_LIST_HEAD(&sta->measurements);
-
+	usteer_sta_update_aggressiveness(sta);
 	return sta;
 }
 
