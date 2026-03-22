@@ -163,8 +163,8 @@ struct cfg_item {
 	_cfg(U32, remote_node_timeout), \
 	_cfg(BOOL, assoc_steering), \
 	_cfg(U32, aggressiveness), \
+	_cfg(U32, reassociation_delay), \
 	_cfg(ARRAY_CB, aggressiveness_mac_list), \
-	_cfg(U32, aggressive_disassoc_timer), \
 	_cfg(I32, min_connect_snr), \
 	_cfg(I32, min_snr), \
 	_cfg(U32, min_snr_kick_delay), \
@@ -186,6 +186,7 @@ struct cfg_item {
 	_cfg(U32, load_kick_reason_code), \
 	_cfg(U32, band_steering_interval), \
 	_cfg(I32, band_steering_min_snr), \
+	_cfg(U32, band_steering_signal_threshold), \
 	_cfg(U32, link_measurement_interval), \
 	_cfg(ARRAY_CB, interfaces), \
 	_cfg(STRING_CB, node_up_script), \
@@ -285,6 +286,7 @@ usteer_ubus_set_config(struct ubus_context *ctx, struct ubus_object *obj,
 		}
 	}
 
+	usteer_sta_load_each_aggressiveness();
 	usteer_interface_init();
 
 	return 0;
@@ -471,6 +473,9 @@ usteer_ubus_get_connected_clients(struct ubus_context *ctx, struct ubus_object *
 				blobmsg_close_table(&b, t);
 			}
 			blobmsg_close_array(&b, a);
+
+			/* Aggressiveness */
+			blobmsg_add_u32(&b, "aggressiveness", si->sta->aggressiveness);
 
 			blobmsg_close_table(&b, s);
 		}
