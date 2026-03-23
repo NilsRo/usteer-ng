@@ -26,6 +26,11 @@ void usteer_band_steering_sta_update(struct sta_info *si)
 		}
 		return;
 	}
+	if (si->node->freq >= 4000)
+		return;
+	if (!si->sta->seen_5ghz)
+		return;
+
 	if (config.band_steering_signal_threshold)
 	{
 		if (si->connected != STA_NOT_CONNECTED && si->band_steering.signal_threshold == NO_SIGNAL)
@@ -106,6 +111,10 @@ void usteer_band_steering_perform_steer(struct usteer_local_node *ln)
 	ln->band_steering_interval = 0;
 
 	list_for_each_entry(si, &ln->node.sta_info, node_list) {
+		/* Check if client supports 5Ghz */
+		if (!si->sta->seen_5ghz)
+			continue;
+
 		/* Check if client is eligable to be steerd */
 		if (!usteer_policy_can_perform_roam(si))
 			continue;
