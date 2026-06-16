@@ -521,9 +521,64 @@ usteer_local_node_list_cb(struct ubus_request *req, int type, struct blob_attr *
 }
 
 static void
+usteer_node_run_update_script(struct usteer_node *node)
+{
+	struct usteer_local_node *ln = container_of(node, struct usteer_local_node, node);
+	char *val;
+
+	if (!node_up_script)
+		return;
+
+	val = alloca(strlen(node_up_script) + strlen(ln->iface) + 8);
+	sprintf(val, "%s '%s'", node_up_script, ln->iface);
+	if (system(val))
+		MSG(INFO, "failed to execute %s\n", val);
+}
+
+static void
+usteer_check_node_enabled(struct usteer_local_node *ln)
+{
+	bool ssid_disabled = config.ssid_list;
+	struct blob_attr *cur;
+	int rem;
+
+	if (config.ssid_list && !ln->node.ssid[0])
+		ssid_disabled = false;
+
+	blobmsg_for_each_attr(cur, config.ssid_list, rem) {
+		if (strcmp(blobmsg_get_string(cur), ln->node.ssid) != 0)
+			continue;
+
+		ssid_disabled = false;
+		break;
+	}
+
+	if (ln->node.disabled == ssid_disabled)
+		return;
+
+	ln->node.disabled = ssid_disabled;
+
+	if (ssid_disabled) {
+		MSG(INFO, "Disconnecting from local node %s\n", usteer_node_name(&ln->node));
+		usteer_local_node_state_reset(ln);
+		usteer_sta_node_cleanup(&ln->node);
+		usteer_measurement_report_node_cleanup(&ln->node);
+		uloop_timeout_cancel(&ln->update);
+		ubus_unsubscribe(ubus_ctx, &ln->ev, ln->obj_id);
+		return;
+	}
+
+	MSG(INFO, "Connecting to local node %s\n", usteer_node_name(&ln->node));
+	ubus_subscribe(ubus_ctx, &ln->ev, ln->obj_id);
+	uloop_timeout_set(&ln->update, 1);
+	usteer_node_run_update_script(&ln->node);
+}
+
+static void
 usteer_local_node_status_cb(struct ubus_request *req, int type, struct blob_attr *msg)
 {
 	enum {
+		MSG_SSID,
 		MSG_FREQ,
 		MSG_CHANNEL,
 		MSG_OP_CLASS,
@@ -531,6 +586,7 @@ usteer_local_node_status_cb(struct ubus_request *req, int type, struct blob_attr
 		__MSG_MAX,
 	};
 	static struct blobmsg_policy policy[__MSG_MAX] = {
+		[MSG_SSID] = { "ssid", BLOBMSG_TYPE_STRING },
 		[MSG_FREQ] = { "freq", BLOBMSG_TYPE_INT32 },
 		[MSG_CHANNEL] = { "channel", BLOBMSG_TYPE_INT32 },
 		[MSG_OP_CLASS] = { "op_class", BLOBMSG_TYPE_INT32 },
@@ -544,6 +600,14 @@ usteer_local_node_status_cb(struct ubus_request *req, int type, struct blob_attr
 	node = &ln->node;
 
 	blobmsg_parse(policy, __MSG_MAX, tb, blob_data(msg), blob_len(msg));
+	if (tb[MSG_SSID]) {
+		const char *ssid = blobmsg_get_string(tb[MSG_SSID]);
+
+		if (strcmp(node->ssid, ssid) != 0) {
+			snprintf(node->ssid, sizeof(node->ssid), "%s", ssid);
+			usteer_check_node_enabled(ln);
+		}
+	}
 	if (tb[MSG_FREQ])
 		node->freq = blobmsg_get_u32(tb[MSG_FREQ]);
 	if (tb[MSG_CHANNEL])
@@ -785,57 +849,6 @@ usteer_get_node(struct ubus_context *ctx, const char *name)
 	ln->bss_tm_queries_timeout.cb = usteer_local_node_process_bss_tm_queries;
 	INIT_LIST_HEAD(&ln->bss_tm_queries);
 	return ln;
-}
-
-static void
-usteer_node_run_update_script(struct usteer_node *node)
-{
-	struct usteer_local_node *ln = container_of(node, struct usteer_local_node, node);
-	char *val;
-
-	if (!node_up_script)
-		return;
-
-	val = alloca(strlen(node_up_script) + strlen(ln->iface) + 8);
-	sprintf(val, "%s '%s'", node_up_script, ln->iface);
-	if (system(val))
-		MSG(INFO, "failed to execute %s\n", val);
-}
-
-static void
-usteer_check_node_enabled(struct usteer_local_node *ln)
-{
-	bool ssid_disabled = config.ssid_list;
-	struct blob_attr *cur;
-	int rem;
-
-	blobmsg_for_each_attr(cur, config.ssid_list, rem) {
-		if (strcmp(blobmsg_get_string(cur), ln->node.ssid) != 0)
-			continue;
-
-		ssid_disabled = false;
-		break;
-	}
-
-	if (ln->node.disabled == ssid_disabled)
-		return;
-
-	ln->node.disabled = ssid_disabled;
-
-	if (ssid_disabled) {
-		MSG(INFO, "Disconnecting from local node %s\n", usteer_node_name(&ln->node));
-		usteer_local_node_state_reset(ln);
-		usteer_sta_node_cleanup(&ln->node);
-		usteer_measurement_report_node_cleanup(&ln->node);
-		uloop_timeout_cancel(&ln->update);
-		ubus_unsubscribe(ubus_ctx, &ln->ev, ln->obj_id);
-		return;
-	}
-
-	MSG(INFO, "Connecting to local node %s\n", usteer_node_name(&ln->node));
-	ubus_subscribe(ubus_ctx, &ln->ev, ln->obj_id);
-	uloop_timeout_set(&ln->update, 1);
-	usteer_node_run_update_script(&ln->node);
 }
 
 static void
