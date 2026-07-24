@@ -47,6 +47,7 @@ struct interface {
 	int ifindex;
 };
 
+
 static void
 interfaces_update_cb(struct vlist_tree *tree,
 		     struct vlist_node *node_new,
@@ -318,6 +319,9 @@ interface_recv_msg(struct interface *iface, char *addr_str, void *buf, int len)
 	if (config.local_mode)
 		return;
 
+	/* DEBUG 1: Hexdump first 64 bytes of raw packet for pattern analysis */
+	debug_hexdump("RAW PACKET START", data, (blob_pad_len(data) < 64) ? blob_pad_len(data) : 64);
+
 	if (blob_pad_len(data) != len) {
 		MSG(DEBUG, "Invalid message length (header: %d, real: %d)\n", blob_pad_len(data), len);
 		return;
@@ -357,8 +361,12 @@ interface_find_by_ifindex(int index)
 static void
 interface_recv_v4(struct uloop_fd *u, unsigned int events)
 {
-	static char buf[APMGR_BUFLEN];
-	static char cmsg_buf[( CMSG_SPACE(sizeof(struct in_pktinfo)) + sizeof(int)) + 1];
+	/* Keep receive buffers aligned for blob parsing and cmsghdr access on
+	 * stricter ARM targets such as Kirkwood.
+	 */
+	static unsigned char buf[APMGR_BUFLEN] __attribute__((aligned(sizeof(unsigned long))));
+	static unsigned char cmsg_buf[(CMSG_SPACE(sizeof(struct in_pktinfo)) + sizeof(int)) + 1]
+		__attribute__((aligned(sizeof(unsigned long))));
 	static struct sockaddr_in sin;
 	char addr_str[INET_ADDRSTRLEN];
 	static struct iovec iov = {
@@ -420,8 +428,12 @@ interface_recv_v4(struct uloop_fd *u, unsigned int events)
 
 
 static void interface_recv_v6(struct uloop_fd *u, unsigned int events){
-	static char buf[APMGR_BUFLEN];
-	static char cmsg_buf[( CMSG_SPACE(sizeof(struct in6_pktinfo)) + sizeof(int)) + 1];
+	/* Keep receive buffers aligned for blob parsing and cmsghdr access on
+	 * stricter ARM targets such as Kirkwood.
+	 */
+	static unsigned char buf[APMGR_BUFLEN] __attribute__((aligned(sizeof(unsigned long))));
+	static unsigned char cmsg_buf[(CMSG_SPACE(sizeof(struct in6_pktinfo)) + sizeof(int)) + 1]
+		__attribute__((aligned(sizeof(unsigned long))));
 	static struct sockaddr_in6 sin;
 	static struct iovec iov = {
 		.iov_base = buf,
