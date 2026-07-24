@@ -1,21 +1,78 @@
 name: Publish
 
 on:
+  schedule:
+    - cron: '0 3 * * *'
   workflow_dispatch:
     inputs:
       openwrt_version:
-       description: 'OpenWrt version'
-       # Use 25.12-SNAPSHOT for APK and 24.10-SNAPSHOT for IPK
-       default: '25.12-SNAPSHOT'
-       required: true
-       type: string
-  
+        description: 'Optional OpenWrt override. Leave empty to resolve the latest release and snapshot automatically.'
+        required: false
+        type: string
+      create_release:
+        description: 'Create a GitHub release'
+        required: false
+        type: boolean
+        default: false
+
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  prepare:
+    if: ${{ github.event_name != 'schedule' || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/development' }}
+    name: Resolve OpenWrt versions
+    runs-on: ubuntu-latest
+    outputs:
+      versions: ${{ steps.resolve.outputs.versions }}
+    steps:
+      - name: Resolve latest release and snapshot
+        id: resolve
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          python - <<'PY'
+          import json
+          import os
+          import re
+          import urllib.request
+
+          def fetch_json(url):
+              req = urllib.request.Request(url, headers={"Accept": "application/vnd.github+json", "User-Agent": "usteer-ng-workflow"})
+              with urllib.request.urlopen(req, timeout=20) as response:
+                  return json.load(response)
+
+          override = os.environ.get("INPUT_OPENWRT_VERSION", "")
+          if override:
+              release_version = override
+              match = re.match(r"^(\d+)\.(\d+)(?:\.(\d+))?", override)
+              if match:
+                  snapshot_version = f"{match.group(1)}.{match.group(2)}-SNAPSHOT"
+              else:
+                  snapshot_version = override
+          else:
+              release_info = fetch_json("https://api.github.com/repos/openwrt/openwrt/releases/latest")
+              tag_name = release_info["tag_name"]
+              match = re.match(r"^v?(\d+)\.(\d+)(?:\.(\d+))?", tag_name)
+              if not match:
+                  raise SystemExit(f"Unable to parse OpenWrt release tag: {tag_name}")
+              release_version = f"{match.group(1)}.{match.group(2)}" if match.group(3) is None else f"{match.group(1)}.{match.group(2)}.{match.group(3)}"
+              snapshot_version = f"{match.group(1)}.{match.group(2)}-SNAPSHOT"
+
+          versions = [release_version, snapshot_version]
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as handle:
+              handle.write(f"versions={json.dumps(versions)}\n")
+
+          print(f"Resolved release={release_version} snapshot={snapshot_version}")
+          PY
+        env:
+          INPUT_OPENWRT_VERSION: ${{ github.event.inputs.openwrt_version }}
+
   build:
-    name: ${{ matrix.arch }} build
+    if: ${{ github.event_name != 'schedule' || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/development' }}
+    name: ${{ matrix.arch }} / ${{ matrix.version }} build
+    needs: prepare
     runs-on: ubuntu-latest
     continue-on-error: true
     strategy:
@@ -66,6 +123,7 @@ jobs:
           - powerpc64_e5500              # OK
           - powerpc_464fp                # OK
           - powerpc_8548                 # OK
+        version: ${{ fromJSON(needs.prepare.outputs.versions) }}
 
     steps:
       - uses: actions/checkout@v6
@@ -75,7 +133,7 @@ jobs:
       - name: Build
         uses: openwrt/gh-action-sdk@main
         env:
-          ARCH: ${{ matrix.arch }}-${{ github.event.inputs.openwrt_version }}
+          ARCH: ${{ matrix.arch }}-${{ matrix.version }}
           V: sc
           PACKAGES: usteer-ng
 
@@ -98,13 +156,14 @@ jobs:
 
       - uses: actions/upload-artifact@v6
         with:
-          name: ls-${{ matrix.arch }}
+          name: ls-${{ matrix.arch }}-${{ matrix.version }}
+          retention-days: 14
           path: |
             bin/packages/${{ matrix.arch }}/action/*.ipk
             bin/packages/${{ matrix.arch }}/action/*.apk
 
   release:
-
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.create_release }}
     name: Release all packages
     runs-on: ubuntu-latest
     needs: build
