@@ -44,6 +44,7 @@ enum usteer_debug {
 extern void log_msg(char *msg);
 extern void debug_msg(int level, const char *func, int line, const char *format, ...);
 extern void debug_msg_cont(int level, const char *format, ...);
+extern void debug_hexdump(const char *prefix, const void *data, int len);
 
 #define __usteer_init __attribute__((constructor))
 

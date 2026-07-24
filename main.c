@@ -80,6 +80,30 @@ void debug_msg_cont(int level, const char *format, ...)
 	va_end(ap);
 }
 
+
+/* DEBUG: Hex dump helper function for Kirkwood diagnostics */
+void debug_hexdump(const char *prefix, const void *data, int len)
+{
+	const unsigned char *buf = (const unsigned char *)data;
+	int i, j;
+	char hex_str[64], ascii_str[32];
+	
+	MSG(NETWORK, "%s (len=%d):\n", prefix, len);
+	
+	for (i = 0; i < len; i += 16) {
+		hex_str[0] = '\0';
+		ascii_str[0] = '\0';
+		
+		for (j = 0; j < 16 && i + j < len; j++) {
+			unsigned char c = buf[i + j];
+			sprintf(hex_str + strlen(hex_str), "%02x ", c);
+			sprintf(ascii_str + strlen(ascii_str), "%c", (c >= 32 && c < 127) ? c : '.');
+		}
+		
+		MSG(NETWORK, "  %04x: %-48s | %s\n", i, hex_str, ascii_str);
+	}
+}
+
 void usteer_init_defaults(void)
 {
 	memset(&config, 0, sizeof(config));
