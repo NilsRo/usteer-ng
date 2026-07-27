@@ -29,6 +29,8 @@ apk --allow-untrusted add /root/usteer/*.apk
 
 The complete documentation for setting everything up and getting it running: [OpenWRT documentation](https://openwrt.org/docs/guide-user/network/wifi/usteer).
 
+See projects [Wiki](https://github.com/NilsRo/usteer-ng/wiki) regarding usteer-ng related topics.
+
 ### Config recommendation
 
 The default settings are the best in most environments (many users overdo optimizations to it) to support roaming and band steering. At best nothing has to be configured but take care that usteer-ng communication is not done on a public network.

@@ -1,0 +1,25 @@
+name: Cron Dispatch
+
+on:
+  schedule:
+    - cron: '0 3 * * *'
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  dispatch-builds:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Trigger master build
+        run: gh workflow run build.yml --repo "$GITHUB_REPOSITORY" --ref master
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # - name: Trigger development build
+      #   run: gh workflow run build.yml --repo "$GITHUB_REPOSITORY" --ref development
+      #   env:
+      #     GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
