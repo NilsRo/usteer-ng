@@ -2,7 +2,7 @@ name: Cron Dispatch
 
 on:
   schedule:
-    - cron: '0 3 * * *'
+    - cron: '0 0 * * 0'
 
 permissions:
   actions: write

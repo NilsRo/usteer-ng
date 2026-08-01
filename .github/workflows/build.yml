@@ -134,6 +134,7 @@ jobs:
           ARCH: ${{ matrix.arch }}-${{ matrix.version }}
           V: sc
           PACKAGES: usteer-ng
+          FIXUP: 1
 
       - name: List outputs
         run: |
