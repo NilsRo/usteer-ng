@@ -76,6 +76,8 @@ enum {
 	APMSG_STA_TIMEOUT,
 	APMSG_STA_SEEN,
 	APMSG_STA_CONNECTED,
+	APMSG_STA_SEEN_2GHZ,
+	APMSG_STA_SEEN_5GHZ,
 	APMSG_STA_LAST_CONNECTED,
 	__APMSG_STA_MAX
 };
@@ -84,6 +86,8 @@ struct apmsg_sta {
 	uint8_t addr[6];
 
 	bool connected;
+	bool seen_2ghz;
+	bool seen_5ghz;
 	int signal;
 	int timeout;
 	int seen;
