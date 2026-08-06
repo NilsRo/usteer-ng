@@ -17,7 +17,7 @@ Its goal is to optimize roaming/band steering behavior of wireless clients (STAs
 
 usteer-ng is available as OpenWrt package and can be installed on devices running OpenWrt 21.02+ using opkg or 25.12+ using apk. Usteer-ng conflicts to Usteer as it actually based on the same code. Also it does not really make sense to have two Wifi controllers installed.
 
-Download the package matching your router architecture, place it to e.g. /root/usteer/ and use the following command to install usteer-ng. You can find [apk packages for all architectures here](https://github.com/NilsRo/usteer-ng/actions/workflows/build.yml) including actual OpenWRT snapshot and official latest OpenWRT release. You should install master build but development is available as well.
+Download the package matching your router architecture, place it to e.g. /root/usteer/ and use the following command to install usteer-ng. You can find [apk packages for all architectures here](https://github.com/NilsRo/usteer-ng/actions/workflows/build.yml) including actual OpenWRT snapshot and official latest OpenWRT release.
 
 ```
 opkg install /root/usteer/*.ipk
