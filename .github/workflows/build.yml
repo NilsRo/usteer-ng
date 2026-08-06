@@ -7,11 +7,6 @@ on:
         description: 'Optional OpenWrt override. Leave empty to resolve the latest release and snapshot automatically.'
         required: false
         type: string
-      create_release:
-        description: 'Create a GitHub release'
-        required: false
-        type: boolean
-        default: false
 
 env:
   CARGO_TERM_COLOR: always
@@ -160,33 +155,3 @@ jobs:
           path: |
             bin/packages/${{ matrix.arch }}/action/*.ipk
             bin/packages/${{ matrix.arch }}/action/*.apk
-
-  release:
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.create_release }}
-    name: Release all packages
-    runs-on: ubuntu-latest
-    needs: build
-    
-    steps:
-    
-      - uses: actions/download-artifact@v6
-        with:
-          path: artifacts
-          pattern: ls-*
-          merge-multiple: true
-          
-      - name: List outputs
-        id: list
-        run: |
-          find artifacts
-          ls artifacts | head -n 1 | awk -F"_" '{ print "usteer-ng_version="$2 }' >> "$GITHUB_OUTPUT"
-    
-      - name: Release
-        uses: softprops/action-gh-release@v1
-        with:
-          prerelease: true
-          tag_name: v${{ steps.list.outputs.usteer-ng_version }}_${{ github.event.inputs.openwrt_version }}_${{ github.run_number }}
-          body: |
-            usteer-ng v${{ steps.list.outputs.usteer-ng_version }} OpenWrt ${{ github.event.inputs.openwrt_version }} build
-          files: |
-            artifacts/*
