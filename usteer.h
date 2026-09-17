@@ -354,7 +354,8 @@ bool usteer_band_steering_is_target(struct usteer_local_node *ln, struct usteer_
 
 void usteer_ubus_init(struct ubus_context *ctx);
 void usteer_ubus_kick_client(struct sta_info *si, uint32_t kick_reason_code);
-int usteer_ubus_trigger_client_scan(struct sta_info *si);
+int usteer_ubus_beacon_request(struct sta_info *si, struct usteer_node *node);
+void usteer_ubus_trigger_client_scan(struct sta_info *si);
 int usteer_ubus_band_steering_request(struct sta_info *si,
                                       uint8_t dialog_token,
                                       bool disassoc_imminent,

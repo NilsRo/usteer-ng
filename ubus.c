@@ -765,25 +765,51 @@ int usteer_ubus_trigger_link_measurement(struct sta_info *si)
 	return ubus_invoke(ubus_ctx, ln->obj_id, "link_measurement_req", b.head, NULL, 0, 100);
 }
 
-int usteer_ubus_trigger_client_scan(struct sta_info *si)
+int usteer_ubus_beacon_request(struct sta_info *si, struct usteer_node *node)
 {
 	struct usteer_local_node *ln = container_of(si->node, struct usteer_local_node, node);
 
-	if (!usteer_sta_supports_beacon_measurement_mode(si, BEACON_MEASUREMENT_ACTIVE)) {
-		MSG(DEBUG, "STA does not support beacon measurement sta=" MAC_ADDR_FMT "\n", MAC_ADDR_DATA(si->sta->addr));
-		return 0;
-	}
-
-	si->scan_band = !si->scan_band;
-
 	blob_buf_init(&b, 0);
 	blobmsg_printf(&b, "addr", MAC_ADDR_FMT, MAC_ADDR_DATA(si->sta->addr));
-	blobmsg_add_string(&b, "ssid", si->node->ssid);
+	blobmsg_add_string(&b, "ssid", node->ssid);
 	blobmsg_add_u32(&b, "mode", BEACON_MEASUREMENT_ACTIVE);
 	blobmsg_add_u32(&b, "duration", config.roam_scan_interval / 100);
-	blobmsg_add_u32(&b, "channel", 0);
-	blobmsg_add_u32(&b, "op_class", si->scan_band ? 1 : 12);
-	return ubus_invoke(ubus_ctx, ln->obj_id, "rrm_beacon_req", b.head, NULL, 0, 100);
+	blobmsg_add_u32(&b, "channel", node->channel);
+	blobmsg_add_u32(&b, "op_class", node->op_class);
+	int ret = ubus_invoke(ubus_ctx, ln->obj_id, "rrm_beacon_req", b.head, NULL, 0, 100);
+	if (ret)
+		MSG(DEBUG, "Failed to send beacon request for node %s (ubus error %d)\n",
+		    usteer_node_name(node), ret);
+
+	return ret;
+}
+
+void usteer_ubus_trigger_client_scan(struct sta_info *si)
+{
+	struct usteer_remote_node *rn;
+	struct usteer_node *node;
+
+	if (!usteer_sta_supports_beacon_measurement_mode(si, BEACON_MEASUREMENT_ACTIVE)) {
+		MSG(DEBUG, "STA does not support beacon measurement sta=" MAC_ADDR_FMT "\n", MAC_ADDR_DATA(si->sta->addr));
+		return;
+	}
+
+	for_each_local_node(node) {
+		if (strcmp(node->ssid, si->node->ssid) ||
+		    !node->channel || !node->op_class)
+			continue;
+		usteer_ubus_beacon_request(si, node);
+		
+	}
+
+	for_each_remote_node(rn) {
+		node = &rn->node;
+		if (strcmp(node->ssid, si->node->ssid) ||
+		    !node->channel || !node->op_class)
+			continue;
+		usteer_ubus_beacon_request(si, node);
+	}
+
 }
 
 void usteer_ubus_kick_client(struct sta_info *si, uint32_t kick_reason_code)
