@@ -302,6 +302,8 @@ void usteer_dump_node(struct blob_buf *buf, struct usteer_node *node)
 	blobmsg_printf(buf, "bssid", MAC_ADDR_FMT, MAC_ADDR_DATA(node->bssid));
 	blobmsg_add_string(buf, "ssid", node->ssid);
 	blobmsg_add_u32(buf, "freq", node->freq);
+	blobmsg_add_u32(buf, "channel", node->channel);
+	blobmsg_add_u32(buf, "op_class", node->op_class);
 	blobmsg_add_u32(buf, "n_assoc", node->n_assoc);
 	blobmsg_add_u32(buf, "noise", node->noise);
 	blobmsg_add_u32(buf, "load", node->load);
