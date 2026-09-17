@@ -79,6 +79,7 @@ enum {
 	APMSG_STA_SEEN_2GHZ,
 	APMSG_STA_SEEN_5GHZ,
 	APMSG_STA_LAST_CONNECTED,
+	APMSG_STA_SEEN_6GHZ,
 	__APMSG_STA_MAX
 };
 
@@ -88,6 +89,7 @@ struct apmsg_sta {
 	bool connected;
 	bool seen_2ghz;
 	bool seen_5ghz;
+	bool seen_6ghz;
 	int signal;
 	int timeout;
 	int seen;

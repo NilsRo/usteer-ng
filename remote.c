@@ -190,6 +190,8 @@ interface_add_station(struct usteer_remote_node *node, struct blob_attr *data)
 		sta->seen_2ghz = 1;
 	if (msg.seen_5ghz)
 		sta->seen_5ghz = 1;
+	if (msg.seen_6ghz)
+		sta->seen_6ghz = 1;
 
 	/* Check if client roamed to this foreign node */
 	if ((connect_change || create) && si->connected == STA_CONNECTED) {
@@ -571,6 +573,7 @@ static void usteer_send_sta_info(struct sta_info *sta)
 	blob_put_int8(&buf, APMSG_STA_CONNECTED, !!sta->connected);
 	blob_put_int8(&buf, APMSG_STA_SEEN_2GHZ, sta->sta->seen_2ghz);
 	blob_put_int8(&buf, APMSG_STA_SEEN_5GHZ, sta->sta->seen_5ghz);
+	blob_put_int8(&buf, APMSG_STA_SEEN_6GHZ, sta->sta->seen_6ghz);
 	blob_put_int32(&buf, APMSG_STA_SIGNAL, sta->signal);
 	blob_put_int32(&buf, APMSG_STA_SEEN, seen);
 	blob_put_int32(&buf, APMSG_STA_LAST_CONNECTED, last_connected);
