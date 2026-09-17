@@ -36,6 +36,7 @@ usteer_sta_del(struct sta *sta)
 	MSG(DEBUG, "Delete station " MAC_ADDR_FMT "\n",
 	    MAC_ADDR_DATA(sta->addr));
 
+	usteer_policy_sta_cleanup(sta);
 	avl_delete(&stations, &sta->avl);
 	usteer_measurement_report_sta_cleanup(sta);
 	free(sta);
@@ -179,6 +180,7 @@ usteer_sta_get(const uint8_t *addr, bool create)
 	avl_insert(&stations, &sta->avl);
 	INIT_LIST_HEAD(&sta->nodes);
 	INIT_LIST_HEAD(&sta->measurements);
+	INIT_LIST_HEAD(&sta->beacon_requests);
 	usteer_sta_update_aggressiveness(sta);
 	return sta;
 }

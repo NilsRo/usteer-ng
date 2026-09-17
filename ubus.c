@@ -20,6 +20,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <net/ethernet.h>
+#include <stdlib.h>
 #ifdef linux
 #include <netinet/ether.h>
 #endif
@@ -190,6 +191,7 @@ struct cfg_item {
 	_cfg(I32, band_steering_min_snr), \
 	_cfg(U32, band_steering_signal_threshold), \
 	_cfg(U32, link_measurement_interval), \
+	_cfg(U32, roam_beacon_req_interval ), \
 	_cfg(ARRAY_CB, interfaces), \
 	_cfg(STRING_CB, node_up_script), \
 	_cfg(ARRAY_CB, event_log_types), \
@@ -408,10 +410,12 @@ usteer_ubus_get_connected_clients(struct ubus_context *ctx, struct ubus_object *
 				  struct ubus_request_data *req, const char *method,
 				  struct blob_attr *msg)
 {
+	struct usteer_beacon_request *request;
 	struct usteer_measurement_report *mr;
 	struct usteer_node *node;
 	struct sta_info *si;
 	void *n, *s, *t, *a;
+	unsigned int beacon_request_count;
 
 	blob_buf_init(&b, 0);
 
@@ -421,6 +425,10 @@ usteer_ubus_get_connected_clients(struct ubus_context *ctx, struct ubus_object *
 		list_for_each_entry(si, &node->sta_info, node_list) {
 			if (si->connected != STA_CONNECTED)
 				continue;
+
+			beacon_request_count = 0;
+			list_for_each_entry(request, &si->sta->beacon_requests, list)
+				beacon_request_count++;
 
 			s = blobmsg_open_table_mac(&b, si->sta->addr);
 			blobmsg_add_u32(&b, "signal", si->signal);
@@ -438,6 +446,7 @@ usteer_ubus_get_connected_clients(struct ubus_context *ctx, struct ubus_object *
 			blobmsg_add_u32(&b, "kick-count", si->kick_count);
 			blobmsg_add_u64(&b, "last-kick", si->roam_kick ? current_time - si->roam_kick : 0);
 			blobmsg_add_u64(&b, "scan_start", si->roam_scan_start ? current_time - si->roam_scan_start : 0);
+			blobmsg_add_u32(&b, "beacon-request-count", beacon_request_count);
 			blobmsg_add_u64(&b, "scan_timeout_start", si->roam_scan_timeout_start ? current_time - si->roam_scan_timeout_start : 0);
 			blobmsg_close_table(&b, t);
 
@@ -765,25 +774,27 @@ int usteer_ubus_trigger_link_measurement(struct sta_info *si)
 	return ubus_invoke(ubus_ctx, ln->obj_id, "link_measurement_req", b.head, NULL, 0, 100);
 }
 
-int usteer_ubus_trigger_client_scan(struct sta_info *si)
+int
+usteer_ubus_beacon_request(struct sta *sta,
+			   struct usteer_beacon_request *request)
 {
-	struct usteer_local_node *ln = container_of(si->node, struct usteer_local_node, node);
-
-	if (!usteer_sta_supports_beacon_measurement_mode(si, BEACON_MEASUREMENT_ACTIVE)) {
-		MSG(DEBUG, "STA does not support beacon measurement sta=" MAC_ADDR_FMT "\n", MAC_ADDR_DATA(si->sta->addr));
-		return 0;
-	}
-
-	si->scan_band = !si->scan_band;
+	int ret;
 
 	blob_buf_init(&b, 0);
-	blobmsg_printf(&b, "addr", MAC_ADDR_FMT, MAC_ADDR_DATA(si->sta->addr));
-	blobmsg_add_string(&b, "ssid", si->node->ssid);
-	blobmsg_add_u32(&b, "mode", BEACON_MEASUREMENT_ACTIVE);
+	blobmsg_printf(&b, "addr", MAC_ADDR_FMT, MAC_ADDR_DATA(sta->addr));
+	blobmsg_add_string(&b, "ssid", request->ssid);
+	blobmsg_add_u32(&b, "mode", request->mode);
 	blobmsg_add_u32(&b, "duration", config.roam_scan_interval / 100);
-	blobmsg_add_u32(&b, "channel", 0);
-	blobmsg_add_u32(&b, "op_class", si->scan_band ? 1 : 12);
-	return ubus_invoke(ubus_ctx, ln->obj_id, "rrm_beacon_req", b.head, NULL, 0, 100);
+	blobmsg_add_u32(&b, "channel", request->channel);
+	blobmsg_add_u32(&b, "op_class", request->op_class);
+
+	ret = ubus_invoke(ubus_ctx, request->obj_id, "rrm_beacon_req",
+			  b.head, NULL, 0, 100);
+	if (ret)
+		MSG(DEBUG, "Failed to send beacon request for SSID %s on channel %d (ubus error %d)\n",
+		    request->ssid, request->channel, ret);
+
+	return ret;
 }
 
 void usteer_ubus_kick_client(struct sta_info *si, uint32_t kick_reason_code)

@@ -206,6 +206,7 @@ struct usteer_config {
 	uint32_t band_steering_signal_threshold;
 
 	uint32_t link_measurement_interval;
+	uint32_t roam_beacon_req_interval ;
 
 	uint32_t initial_connect_delay;
 
@@ -297,6 +298,7 @@ struct sta {
 	struct avl_node avl;
 	struct list_head nodes;
 	struct list_head measurements;
+	struct list_head beacon_requests;
 
 	uint8_t seen_2ghz : 1;
 	uint8_t seen_5ghz : 1;
@@ -305,6 +307,18 @@ struct sta {
 	uint32_t aggressiveness;
 
 	uint8_t addr[6];
+	uint64_t beacon_scan_time;
+	bool have_beacon_scan_time;
+	uint64_t beacon_request_time;
+};
+
+struct usteer_beacon_request {
+	struct list_head list;
+	uint32_t obj_id;
+	char ssid[33];
+	int channel;
+	int op_class;
+	enum usteer_beacon_measurement_mode mode;
 };
 
 struct usteer_measurement_report {
@@ -347,6 +361,9 @@ int usteer_local_node_get_beacon_interval(struct usteer_local_node *ln);
 
 bool usteer_policy_node_below_max_assoc(struct usteer_node *node);
 bool usteer_policy_can_perform_roam(struct sta_info *si);
+void usteer_policy_trigger_client_scan(struct sta_info *si,
+				       enum usteer_beacon_measurement_mode mode);
+void usteer_policy_sta_cleanup(struct sta *sta);
 
 void usteer_band_steering_perform_steer(struct usteer_local_node *ln);
 void usteer_band_steering_sta_update(struct sta_info *si);
@@ -354,7 +371,8 @@ bool usteer_band_steering_is_target(struct usteer_local_node *ln, struct usteer_
 
 void usteer_ubus_init(struct ubus_context *ctx);
 void usteer_ubus_kick_client(struct sta_info *si, uint32_t kick_reason_code);
-int usteer_ubus_trigger_client_scan(struct sta_info *si);
+int usteer_ubus_beacon_request(struct sta *sta,
+			       struct usteer_beacon_request *request);
 int usteer_ubus_band_steering_request(struct sta_info *si,
                                       uint8_t dialog_token,
                                       bool disassoc_imminent,

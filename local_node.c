@@ -190,7 +190,7 @@ usteer_handle_bss_tm_response(struct usteer_local_node *ln, struct blob_attr *ms
 }
 
 static int
-usteer_local_node_handle_beacon_report(struct usteer_local_node *ln, struct blob_attr *msg)
+usteer_local_node_handle_beacon_report(struct blob_attr *msg)
 {
 	enum {
 		BR_ADDRESS,
@@ -312,7 +312,7 @@ usteer_handle_event(struct ubus_context *ctx, struct ubus_object *obj,
 	} else if(!strcmp(method, "bss-transition-response")) {
 		return usteer_handle_bss_tm_response(ln, msg);
 	} else if(!strcmp(method, "beacon-report")) {
-		return usteer_local_node_handle_beacon_report(ln, msg);
+		return usteer_local_node_handle_beacon_report(msg);
 	} else if(!strcmp(method, "link-measurement-report")) {
 		return usteer_local_node_handle_link_measurement_report(ln, msg);
 	}

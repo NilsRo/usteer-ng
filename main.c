@@ -145,7 +145,8 @@ void usteer_init_defaults(void)
 	config.roam_process_timeout = 5 * 1000;
 	config.roam_scan_tries = 3;
 	config.roam_scan_timeout = 0;
-	config.roam_scan_interval = 10 * 1000;
+	config.roam_scan_interval = 20 * 1000;
+	config.roam_beacon_req_interval  = 2000;
 	config.roam_scan_snr = -65;
 	config.roam_trigger_interval = 30 * 1000;
 	config.roam_trigger_snr = 0;

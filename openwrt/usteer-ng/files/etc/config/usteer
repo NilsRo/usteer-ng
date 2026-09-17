@@ -106,7 +106,11 @@ config usteer
 	#option roam_scan_timeout 0
 
 	# Minimum time (ms) between client roaming scan trigger attempts
-	#option roam_scan_interval 10000
+	#option roam_scan_interval 20000
+
+	# Interval (ms) between beacon requests sent to each station (default: 2000).
+	# Set to 0 to use classic full-frequency scans.
+	#option roam_beacon_req_interval  2000
 
 	# Maximum signal-to-noise ratio or signal level (dBm) before attempting to trigger
 	# forced client roaming

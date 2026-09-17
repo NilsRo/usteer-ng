@@ -301,6 +301,195 @@ usteer_roam_sm_start_scan(struct sta_info *si, struct uevent *ev)
 	usteer_roam_set_state(si, ROAM_TRIGGER_IDLE, ev);
 }
 
+static void usteer_policy_process_beacon_requests(struct uloop_timeout *);
+static struct uloop_timeout beacon_requests_timeout = {
+	.cb = usteer_policy_process_beacon_requests,
+};
+
+static void
+usteer_policy_schedule_beacon_requests(void)
+{
+	struct sta *sta;
+	uint64_t next_time = UINT64_MAX;
+	uint32_t delay;
+
+	avl_for_each_element(&stations, sta, avl) {
+		if (list_empty(&sta->beacon_requests))
+			continue;
+
+		if (sta->beacon_request_time < next_time)
+			next_time = sta->beacon_request_time;
+	}
+
+	if (next_time == UINT64_MAX)
+		return;
+
+	usteer_update_time();
+	delay = next_time > current_time ? next_time - current_time : 0;
+	uloop_timeout_set(&beacon_requests_timeout, delay);
+}
+
+static void
+usteer_policy_process_beacon_request(struct sta *sta)
+{
+	struct usteer_beacon_request *request;
+
+	if (list_empty(&sta->beacon_requests))
+		return;
+
+	request = list_first_entry(&sta->beacon_requests,
+				   struct usteer_beacon_request, list);
+	list_del(&request->list);
+	usteer_ubus_beacon_request(sta, request);
+	free(request);
+
+	if (list_empty(&sta->beacon_requests)) {
+		sta->beacon_request_time = 0;
+		return;
+	}
+
+	sta->beacon_request_time = current_time + config.roam_beacon_req_interval ;
+}
+
+/* Beacon reports are per BSS, so pace queued requests by interval, not reports. */
+static void
+usteer_policy_process_beacon_requests(struct uloop_timeout *)
+{
+	struct sta *sta;
+
+	usteer_update_time();
+	avl_for_each_element(&stations, sta, avl) {
+		if (list_empty(&sta->beacon_requests) ||
+		    sta->beacon_request_time > current_time)
+			continue;
+
+		usteer_policy_process_beacon_request(sta);
+	}
+
+	usteer_policy_schedule_beacon_requests();
+}
+
+static void
+usteer_policy_add_beacon_request(struct sta_info *si, struct usteer_node *node,
+				 enum usteer_beacon_measurement_mode mode,
+				 struct list_head *requests)
+{
+	struct usteer_beacon_request *request;
+	struct usteer_local_node *ln;
+
+	if (!node->channel || !node->op_class)
+		return;
+
+	list_for_each_entry(request, requests, list)
+		if (!strcmp(request->ssid, node->ssid) &&
+		    request->channel == node->channel &&
+		    request->op_class == node->op_class)
+			return;
+
+	request = calloc(1, sizeof(*request));
+	if (!request) {
+		MSG(INFO, "Failed to allocate beacon request for SSID %s on channel %d\n",
+		    node->ssid, node->channel);
+		return;
+	}
+
+	ln = container_of(si->node, struct usteer_local_node, node);
+	request->obj_id = ln->obj_id;
+	memcpy(request->ssid, node->ssid, sizeof(request->ssid));
+	request->channel = node->channel;
+	request->op_class = node->op_class;
+	request->mode = mode;
+	list_add_tail(&request->list, requests);
+}
+
+static bool
+usteer_policy_beacon_request_pending(struct sta *sta)
+{
+	if (list_empty(&sta->beacon_requests))
+		return false;
+
+	MSG(DEBUG, "Ignoring beacon request for station " MAC_ADDR_FMT
+	    ": a request is already scheduled\n", MAC_ADDR_DATA(sta->addr));
+	return true;
+}
+
+void
+usteer_policy_trigger_client_scan(struct sta_info *si,
+				  enum usteer_beacon_measurement_mode mode)
+{
+	struct usteer_beacon_request *request, *tmp;
+	struct usteer_beacon_request full_scan;
+	struct usteer_local_node *ln;
+	struct usteer_remote_node *rn;
+	struct usteer_node *node;
+	LIST_HEAD(requests);
+
+	if (usteer_policy_beacon_request_pending(si->sta))
+		return;
+
+	usteer_update_time();
+	if (!usteer_sta_supports_beacon_measurement_mode(si, mode)) {
+		// if (usteer_sta_supports_beacon_measurement_mode(si, BEACON_MEASUREMENT_ACTIVE))
+		// 	mode = BEACON_MEASUREMENT_ACTIVE;
+		// else if (usteer_sta_supports_beacon_measurement_mode(si, BEACON_MEASUREMENT_PASSIVE))
+		// 	mode = BEACON_MEASUREMENT_PASSIVE;
+		// else if (usteer_sta_supports_beacon_measurement_mode(si, BEACON_MEASUREMENT_TABLE))
+		// 	mode = BEACON_MEASUREMENT_TABLE;
+		// else {
+			MSG(DEBUG, "STA does not support beacon measurement sta=" MAC_ADDR_FMT "\n",
+			    MAC_ADDR_DATA(si->sta->addr));
+			return;
+		// }
+	}
+
+	if (!config.roam_beacon_req_interval ) {
+		ln = container_of(si->node, struct usteer_local_node, node);
+		si->scan_band = !si->scan_band;
+		full_scan.obj_id = ln->obj_id;
+		memcpy(full_scan.ssid, si->node->ssid, sizeof(full_scan.ssid));
+		full_scan.channel = 0;
+		full_scan.op_class = si->scan_band ? 1 : 12;
+		full_scan.mode = mode;
+		usteer_ubus_beacon_request(si->sta, &full_scan);
+		return;
+	}
+
+	for_each_local_node(node) {
+		if (strcmp(node->ssid, si->node->ssid))
+			continue;
+
+		usteer_policy_add_beacon_request(si, node, mode, &requests);
+	}
+
+	for_each_remote_node(rn) {
+		node = &rn->node;
+		if (strcmp(node->ssid, si->node->ssid))
+			continue;
+
+		usteer_policy_add_beacon_request(si, node, mode, &requests);
+	}
+
+	list_for_each_entry_safe(request, tmp, &requests, list)
+		list_move_tail(&request->list, &si->sta->beacon_requests);
+
+	if (!list_empty(&si->sta->beacon_requests)) {
+		si->sta->beacon_request_time = current_time;
+		usteer_policy_schedule_beacon_requests();
+	}
+}
+
+void
+usteer_policy_sta_cleanup(struct sta *sta)
+{
+	struct usteer_beacon_request *request, *tmp;
+
+	list_for_each_entry_safe(request, tmp, &sta->beacon_requests, list) {
+		list_del(&request->list);
+		free(request);
+	}
+	sta->beacon_request_time = 0;
+}
+
 static struct sta_info *
 usteer_roam_sm_found_better_node(struct sta_info *si, struct uevent *ev, enum roam_trigger_state next_state)
 {
@@ -354,7 +543,7 @@ usteer_roam_trigger_sm(struct usteer_local_node *ln, struct sta_info *si)
 		}
 
 		/* Send beacon-request to client */
-		usteer_ubus_trigger_client_scan(si);
+		usteer_policy_trigger_client_scan(si, BEACON_MEASUREMENT_ACTIVE);
 		usteer_roam_sm_start_scan(si, &ev);
 		break;
 
