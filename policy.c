@@ -354,7 +354,7 @@ usteer_roam_trigger_sm(struct usteer_local_node *ln, struct sta_info *si)
 		}
 
 		/* Send beacon-request to client */
-		usteer_ubus_trigger_client_scan(si);
+		usteer_ubus_trigger_client_scan(si, BEACON_MEASUREMENT_ACTIVE);
 		usteer_roam_sm_start_scan(si, &ev);
 		break;
 
