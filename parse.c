@@ -134,6 +134,7 @@ bool parse_apmsg_sta(struct apmsg_sta *msg, struct blob_attr *data)
 		[APMSG_STA_SEEN_2GHZ] = { .type = BLOB_ATTR_INT8 },
 		[APMSG_STA_SEEN_5GHZ] = { .type = BLOB_ATTR_INT8 },
 		[APMSG_STA_LAST_CONNECTED] = { .type = BLOB_ATTR_INT32 },
+		[APMSG_STA_SEEN_6GHZ] = { .type = BLOB_ATTR_INT8 },
 	};
 	struct blob_attr *tb[__APMSG_STA_MAX];
 
@@ -156,6 +157,7 @@ bool parse_apmsg_sta(struct apmsg_sta *msg, struct blob_attr *data)
 	msg->connected = blob_get_int8(tb[APMSG_STA_CONNECTED]);
 	msg->seen_2ghz = tb[APMSG_STA_SEEN_2GHZ] ? blob_get_int8(tb[APMSG_STA_SEEN_2GHZ]) : false;
 	msg->seen_5ghz = tb[APMSG_STA_SEEN_5GHZ] ? blob_get_int8(tb[APMSG_STA_SEEN_5GHZ]) : false;
+	msg->seen_6ghz = tb[APMSG_STA_SEEN_6GHZ] ? blob_get_int8(tb[APMSG_STA_SEEN_6GHZ]) : false;
 	msg->last_connected = blob_get_int32(tb[APMSG_STA_LAST_CONNECTED]);
 
 	return true;

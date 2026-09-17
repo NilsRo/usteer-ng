@@ -106,6 +106,7 @@ usteer_ubus_get_client_info(struct ubus_context *ctx, struct ubus_object *obj,
 	blob_buf_init(&b, 0);
 	blobmsg_add_u8(&b, "2ghz", sta->seen_2ghz);
 	blobmsg_add_u8(&b, "5ghz", sta->seen_5ghz);
+	blobmsg_add_u8(&b, "6ghz", sta->seen_6ghz);
 	_n = blobmsg_open_table(&b, "nodes");
 	list_for_each_entry(si, &sta->nodes, list) {
 		_cur_n = blobmsg_open_table(&b, usteer_node_name(si->node));
