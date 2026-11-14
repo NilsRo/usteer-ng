@@ -361,8 +361,7 @@ int usteer_local_node_get_beacon_interval(struct usteer_local_node *ln);
 
 bool usteer_policy_node_below_max_assoc(struct usteer_node *node);
 bool usteer_policy_can_perform_roam(struct sta_info *si);
-void usteer_policy_trigger_client_scan(struct sta_info *si,
-				       enum usteer_beacon_measurement_mode mode);
+void usteer_policy_trigger_client_scan(struct sta_info *si);
 void usteer_policy_sta_cleanup(struct sta *sta);
 
 void usteer_band_steering_perform_steer(struct usteer_local_node *ln);

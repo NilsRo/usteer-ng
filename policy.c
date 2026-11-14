@@ -414,32 +414,28 @@ usteer_policy_beacon_request_pending(struct sta *sta)
 }
 
 void
-usteer_policy_trigger_client_scan(struct sta_info *si,
-				  enum usteer_beacon_measurement_mode mode)
+usteer_policy_trigger_client_scan(struct sta_info *si)
 {
 	struct usteer_beacon_request *request, *tmp;
 	struct usteer_beacon_request full_scan;
 	struct usteer_local_node *ln;
 	struct usteer_remote_node *rn;
 	struct usteer_node *node;
+	enum usteer_beacon_measurement_mode mode;
 	LIST_HEAD(requests);
 
 	if (usteer_policy_beacon_request_pending(si->sta))
 		return;
 
 	usteer_update_time();
-	if (!usteer_sta_supports_beacon_measurement_mode(si, mode)) {
-		// if (usteer_sta_supports_beacon_measurement_mode(si, BEACON_MEASUREMENT_ACTIVE))
-		// 	mode = BEACON_MEASUREMENT_ACTIVE;
-		// else if (usteer_sta_supports_beacon_measurement_mode(si, BEACON_MEASUREMENT_PASSIVE))
-		// 	mode = BEACON_MEASUREMENT_PASSIVE;
-		// else if (usteer_sta_supports_beacon_measurement_mode(si, BEACON_MEASUREMENT_TABLE))
-		// 	mode = BEACON_MEASUREMENT_TABLE;
-		// else {
-			MSG(DEBUG, "STA does not support beacon measurement sta=" MAC_ADDR_FMT "\n",
-			    MAC_ADDR_DATA(si->sta->addr));
-			return;
-		// }
+	if (usteer_sta_supports_beacon_measurement_mode(si, BEACON_MEASUREMENT_ACTIVE))
+		mode = BEACON_MEASUREMENT_ACTIVE;
+	else if (usteer_sta_supports_beacon_measurement_mode(si, BEACON_MEASUREMENT_TABLE))
+		mode = BEACON_MEASUREMENT_TABLE;
+	else {
+		MSG(DEBUG, "STA does not support beacon measurement sta=" MAC_ADDR_FMT "\n",
+			MAC_ADDR_DATA(si->sta->addr));
+		return;
 	}
 
 	if (!config.roam_beacon_req_interval ) {
@@ -543,7 +539,7 @@ usteer_roam_trigger_sm(struct usteer_local_node *ln, struct sta_info *si)
 		}
 
 		/* Send beacon-request to client */
-		usteer_policy_trigger_client_scan(si, BEACON_MEASUREMENT_ACTIVE);
+		usteer_policy_trigger_client_scan(si);
 		usteer_roam_sm_start_scan(si, &ev);
 		break;
 
